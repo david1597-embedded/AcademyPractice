@@ -5,6 +5,14 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Button", "Button\Button.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
 EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SWITCH_practice1", "SWITCH_practice1\SWITCH_practice1.cproj", "{91184407-9582-4015-8EE8-40A064768B25}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SWITCH_practice2_state", "SWITCH_practice2\SWITCH_practice2_state.cproj", "{85259F25-DE03-41F4-BDF0-328CA98A6BD4}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SWITCH_FND_practice1_1digittimer", "SWITCH_FND_practice1\SWITCH_FND_practice1_1digittimer.cproj", "{85DD2842-745A-4334-8E2A-5270030BAB12}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SWITCH_FND_practice2_4digittimer", "SWITCH_FND_practice2\SWITCH_FND_practice2_4digittimer.cproj", "{0504935B-B3A9-4575-929F-AA71A09FAC61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|AVR = Debug|AVR
@@ -15,6 +23,22 @@ Global
 		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Debug|AVR.Build.0 = Debug|AVR
 		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.ActiveCfg = Release|AVR
 		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.Build.0 = Release|AVR
+		{91184407-9582-4015-8EE8-40A064768B25}.Debug|AVR.ActiveCfg = Debug|AVR
+		{91184407-9582-4015-8EE8-40A064768B25}.Debug|AVR.Build.0 = Debug|AVR
+		{91184407-9582-4015-8EE8-40A064768B25}.Release|AVR.ActiveCfg = Release|AVR
+		{91184407-9582-4015-8EE8-40A064768B25}.Release|AVR.Build.0 = Release|AVR
+		{85259F25-DE03-41F4-BDF0-328CA98A6BD4}.Debug|AVR.ActiveCfg = Debug|AVR
+		{85259F25-DE03-41F4-BDF0-328CA98A6BD4}.Debug|AVR.Build.0 = Debug|AVR
+		{85259F25-DE03-41F4-BDF0-328CA98A6BD4}.Release|AVR.ActiveCfg = Release|AVR
+		{85259F25-DE03-41F4-BDF0-328CA98A6BD4}.Release|AVR.Build.0 = Release|AVR
+		{85DD2842-745A-4334-8E2A-5270030BAB12}.Debug|AVR.ActiveCfg = Debug|AVR
+		{85DD2842-745A-4334-8E2A-5270030BAB12}.Debug|AVR.Build.0 = Debug|AVR
+		{85DD2842-745A-4334-8E2A-5270030BAB12}.Release|AVR.ActiveCfg = Release|AVR
+		{85DD2842-745A-4334-8E2A-5270030BAB12}.Release|AVR.Build.0 = Release|AVR
+		{0504935B-B3A9-4575-929F-AA71A09FAC61}.Debug|AVR.ActiveCfg = Debug|AVR
+		{0504935B-B3A9-4575-929F-AA71A09FAC61}.Debug|AVR.Build.0 = Debug|AVR
+		{0504935B-B3A9-4575-929F-AA71A09FAC61}.Release|AVR.ActiveCfg = Release|AVR
+		{0504935B-B3A9-4575-929F-AA71A09FAC61}.Release|AVR.Build.0 = Release|AVR
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
