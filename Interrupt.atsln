@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Atmel Studio Solution File, Format Version 11.00
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice1_toggle", "Interrupt\Interrupt_practice1_toggle.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice2_TIMERCOUNTER_CTC", "Interrupt_practice2_TIMERCOUNTER_CTC\Interrupt_practice2_TIMERCOUNTER_CTC.cproj", "{B4714166-25BE-4D45-B4FB-2B9668ACEB07}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice3_normalmode", "Interrupt_practice3_normalmode\Interrupt_practice3_normalmode.cproj", "{0D923FAF-5D70-4634-B454-389DB07BACA4}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice4_pwm", "Interrupt_practice4_pwm\Interrupt_practice4_pwm.cproj", "{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Project1_fan", "Project1_fan\Project1_fan.cproj", "{B7568D8D-45B5-4EE3-9242-8CF075A49E98}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Debug|AVR.ActiveCfg = Debug|AVR
+		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Debug|AVR.Build.0 = Debug|AVR
+		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.ActiveCfg = Release|AVR
+		{DCE6C7E3-EE26-4D79-826B-08594B9AD897}.Release|AVR.Build.0 = Release|AVR
+		{B4714166-25BE-4D45-B4FB-2B9668ACEB07}.Debug|AVR.ActiveCfg = Debug|AVR
+		{B4714166-25BE-4D45-B4FB-2B9668ACEB07}.Debug|AVR.Build.0 = Debug|AVR
+		{B4714166-25BE-4D45-B4FB-2B9668ACEB07}.Release|AVR.ActiveCfg = Release|AVR
+		{B4714166-25BE-4D45-B4FB-2B9668ACEB07}.Release|AVR.Build.0 = Release|AVR
+		{0D923FAF-5D70-4634-B454-389DB07BACA4}.Debug|AVR.ActiveCfg = Debug|AVR
+		{0D923FAF-5D70-4634-B454-389DB07BACA4}.Debug|AVR.Build.0 = Debug|AVR
+		{0D923FAF-5D70-4634-B454-389DB07BACA4}.Release|AVR.ActiveCfg = Release|AVR
+		{0D923FAF-5D70-4634-B454-389DB07BACA4}.Release|AVR.Build.0 = Release|AVR
+		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Debug|AVR.ActiveCfg = Debug|AVR
+		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Debug|AVR.Build.0 = Debug|AVR
+		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Release|AVR.ActiveCfg = Release|AVR
+		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Release|AVR.Build.0 = Release|AVR
+		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Debug|AVR.ActiveCfg = Debug|AVR
+		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Debug|AVR.Build.0 = Debug|AVR
+		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Release|AVR.ActiveCfg = Release|AVR
+		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
