@@ -11,7 +11,13 @@ Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice3_normalm
 EndProject
 Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice4_pwm", "Interrupt_practice4_pwm\Interrupt_practice4_pwm.cproj", "{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}"
 EndProject
-Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Project1_fan", "Project1_fan\Project1_fan.cproj", "{B7568D8D-45B5-4EE3-9242-8CF075A49E98}"
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice5_16bitpwm", "Interrupt_practice5_16bitpwm\Interrupt_practice5_16bitpwm.cproj", "{EABBF925-9F44-49FB-9AF2-D391FBF0D6FF}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice6_usart", "Interrupt_practice6_usart\Interrupt_practice6_usart.cproj", "{DF005D27-F365-4E9B-8356-74C3E685BCA3}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice7_uasrt_interrupt", "Interrupt_practice7_uasrt_interrupt\Interrupt_practice7_uasrt_interrupt.cproj", "{31FB683B-E36B-4C62-AC79-02E312945EE4}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Interrupt_practice8_usart_interrupt2", "Interrupt_practice8_usart_interrupt2\Interrupt_practice8_usart_interrupt2.cproj", "{967B0781-AB90-4D23-AF64-AB02217517C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +41,22 @@ Global
 		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Debug|AVR.Build.0 = Debug|AVR
 		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Release|AVR.ActiveCfg = Release|AVR
 		{DE0730FF-A38C-4C9A-B95F-4B2F26A1505C}.Release|AVR.Build.0 = Release|AVR
-		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Debug|AVR.ActiveCfg = Debug|AVR
-		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Debug|AVR.Build.0 = Debug|AVR
-		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Release|AVR.ActiveCfg = Release|AVR
-		{B7568D8D-45B5-4EE3-9242-8CF075A49E98}.Release|AVR.Build.0 = Release|AVR
+		{EABBF925-9F44-49FB-9AF2-D391FBF0D6FF}.Debug|AVR.ActiveCfg = Debug|AVR
+		{EABBF925-9F44-49FB-9AF2-D391FBF0D6FF}.Debug|AVR.Build.0 = Debug|AVR
+		{EABBF925-9F44-49FB-9AF2-D391FBF0D6FF}.Release|AVR.ActiveCfg = Release|AVR
+		{EABBF925-9F44-49FB-9AF2-D391FBF0D6FF}.Release|AVR.Build.0 = Release|AVR
+		{DF005D27-F365-4E9B-8356-74C3E685BCA3}.Debug|AVR.ActiveCfg = Debug|AVR
+		{DF005D27-F365-4E9B-8356-74C3E685BCA3}.Debug|AVR.Build.0 = Debug|AVR
+		{DF005D27-F365-4E9B-8356-74C3E685BCA3}.Release|AVR.ActiveCfg = Release|AVR
+		{DF005D27-F365-4E9B-8356-74C3E685BCA3}.Release|AVR.Build.0 = Release|AVR
+		{31FB683B-E36B-4C62-AC79-02E312945EE4}.Debug|AVR.ActiveCfg = Debug|AVR
+		{31FB683B-E36B-4C62-AC79-02E312945EE4}.Debug|AVR.Build.0 = Debug|AVR
+		{31FB683B-E36B-4C62-AC79-02E312945EE4}.Release|AVR.ActiveCfg = Release|AVR
+		{31FB683B-E36B-4C62-AC79-02E312945EE4}.Release|AVR.Build.0 = Release|AVR
+		{967B0781-AB90-4D23-AF64-AB02217517C0}.Debug|AVR.ActiveCfg = Debug|AVR
+		{967B0781-AB90-4D23-AF64-AB02217517C0}.Debug|AVR.Build.0 = Debug|AVR
+		{967B0781-AB90-4D23-AF64-AB02217517C0}.Release|AVR.ActiveCfg = Release|AVR
+		{967B0781-AB90-4D23-AF64-AB02217517C0}.Release|AVR.Build.0 = Release|AVR
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
