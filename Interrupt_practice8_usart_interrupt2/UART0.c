@@ -84,10 +84,9 @@ void UART0_ISR_Process()
 void UART0_execute()
 {
 	if(UART0_getFlag())
-	{
+	{ 
 		UART0_clearRxFlag();
 		uint8_t *rxString = UART0_readRxBuff();
-			
 		//printf(rxString); Needs output stream
 		UART0_print(rxString);
 	}
