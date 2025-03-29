@@ -1,0 +1,9 @@
+../Core/Src/main.c:72:1:__io_putchar	2
+../Core/Src/main.c:114:5:main	2
+../Core/Src/main.c:188:6:SystemClock_Config	3
+../Core/Src/main.c:230:6:temp_process	2
+../Core/Src/main.c:246:6:water_process	3
+../Core/Src/main.c:266:6:LCD_process	4
+../Core/Src/main.c:294:6:FND_process	1
+../Core/Src/main.c:304:6:ULTRA_process	3
+../Core/Src/main.c:333:6:Error_Handler	1

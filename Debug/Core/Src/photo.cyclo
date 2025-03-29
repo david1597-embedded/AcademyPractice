@@ -1,0 +1,3 @@
+../Core/Src/photo.c:12:9:Get_3cm_photo_data	1
+../Core/Src/photo.c:16:9:Get_9cm_photo_data	1
+../Core/Src/photo.c:20:9:Get_15cm_photo_data	1
