@@ -9,6 +9,7 @@
 #define INC_I2C_LCD_H_
 
 #include "main.h"
+#include "delay.h"
 #include "i2c.h"
 #include <stdio.h>
 #include <string.h>

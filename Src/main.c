@@ -114,6 +114,24 @@ uint16_t leds[5]={ PARK1_LED_Pin, PARK2_LED_Pin , PARK3_LED_Pin, PARK4_LED_Pin, 
 uint8_t vacant_count=0;
 
 uint8_t lcd_buffer[30];
+
+//MORO ENTERENCE
+typedef enum
+{
+  IDLE,
+  LED_FADE_IN,
+  LED_FADE_OUT,
+  MOTOR_OPEN,
+  MOTOR_CLOSE
+}ControlState;
+
+ControlState control_state=IDLE;
+uint32_t last_distance = 999;
+uint8_t action_triggered=0;
+uint8_t motor_active=0;
+
+uint32_t motor_start_time = 0;
+uint32_t led_duty = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,6 +163,10 @@ void sensor_process(void);
 void led_on_off(void);
 uint8_t cal_vacant_place(void);
 void lcd_print(void);
+
+void motor_open(void);
+void motor_close(void);
+void motor_stop(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -186,22 +208,21 @@ int main(void)
   MX_TIM1_Init();
   MX_USART6_UART_Init();
   MX_ADC1_Init();
-  MX_I2C1_Init();
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_TIM9_Init();
+  MX_I2C1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+  i2c_lcd_init();
   HAL_ADC_Start_DMA(&hadc1,adcValue,6);//0 : park1_light 1 : park2_light 2 : park3_light 3: park4_light 4 : park5_light 5 : flame
   HAL_TIM_Base_Start(&htim1);              //Timer for DHT11
   HAL_TIM_IC_Start(&htim3, TIM_CHANNEL_1);//Timer for HR-SC04
 
   dht11Init(&dht, GPIOC, GPIO_PIN_9);
   ultra_Init(&ultra1, GPIOA, GPIO_PIN_8);
-//  i2c_lcd_init();
-//  move_cursor(1,1);
-//  snprintf(lcd_buffer,"Welcome %d",7);
-//  lcd_string(lcd_buffer);
-//  HAL_Delay(3000);
+  move_cursor(1,1);
+
 
   printf("system started. Good Luck. \r\n");
   set_AT_mode();
@@ -221,7 +242,7 @@ int main(void)
 
      /*dht11 test code*/
       ultra_Trigger(&ultra1, TIM_IT_CC1);
-      HAL_Delay(10);
+      HAL_Delay(60);
       sensor_process();
       HAL_Delay(10);
       if(dht11Read(&dht))
@@ -229,9 +250,15 @@ int main(void)
 	    //온습도 출력
 	   vacant_count=cal_vacant_place();
 	   led_on_off();
-	   snprintf(data_to_ras,sizeof(data_to_ras),"Temp:%d/Humi:%d/pl1:%d/pl2:%d/pl3:%d/pl4:%d/pl5:%d/empty:%d/flame:%d\r\n",
-		    dht.temperature,dht.humidity,check_light[0],check_light[1],check_light[2],check_light[3],check_light[4],vacant_count,flame);
+	   snprintf(data_to_ras,sizeof(data_to_ras),"Temp:%d/Humi:%d/pl1:%d/pl2:%d/pl3:%d/pl4:%d/pl5:%d/empty:%d/flame:%d/Main:%s\r\n",
+		    dht.temperature,dht.humidity,check_light[0],check_light[1],check_light[2],check_light[3],check_light[4],vacant_count,flame,action_triggered == 1?"OPEN":"CLOSE");
 	   HAL_UART_Transmit(&huart6, (uint8_t *)data_to_ras, strlen(data_to_ras), 1000);
+	   move_cursor(0,0);
+	   sprintf(lcd_buffer,"Empty Space:%d",vacant_count);
+	   lcd_string(lcd_buffer);
+	   move_cursor(1,0);
+	   sprintf(lcd_buffer,"Temp:%d,Humid:%d",dht.temperature, dht.humidity);
+	   lcd_string(lcd_buffer);
 	   printf("tem:%d , hum: %d %% \r\n",dht.temperature,dht.humidity);
       }
       else
@@ -376,6 +403,22 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       }
   }
 }
+
+// 모터 제어 함수
+void motor_open(void) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);  // IN1 HIGH
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET); // IN2 LOW
+}
+
+void motor_close(void) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET); // IN1 LOW
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);  // IN2 HIGH
+}
+
+void motor_stop(void) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET); // IN1 LOW
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET); // IN2 LOW
+}
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     //PC <-> STM32
   if (huart->Instance == USART2) {
@@ -390,6 +433,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
       }
 }
 
+//Input Capture Callback
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
   if(htim->Instance == TIM3)
@@ -414,18 +458,81 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	  echo_time=(0xFFFF - IC_Value_1) + IC_Value_2;
 	}
 	ultra1.distance=echo_time/58;
-	if(echo_time/58 <50)
-	{
-	  //LED 부웅부웅부웅
-	  //부저 왜애앵애ㅐㅇ
-	}
+
 	printf("Object detected....[ %d cm ] \r\n",ultra1.distance);
+
+	if((echo_time/58 <20) && !action_triggered)
+	{
+	   control_state = MOTOR_OPEN;//모터 회전(문 열기)
+	   motor_start_time = HAL_GetTick();
+	   motor_open();
+	   motor_active = 1;
+	   action_triggered=1;
+	   HAL_TIM_Base_Start_IT(&htim4);
+	}
+	else if((echo_time/58 >20) && motor_active)
+	{
+	  //차량 사라짐 모터 역회전
+	  control_state = MOTOR_CLOSE;
+	  motor_start_time=HAL_GetTick();
+	  motor_close();
+	}
+
 	ultra1.capture_flag = 0;
 	__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
 	__HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
       }
     }
   }
+}
+
+//Elapsed Call back
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if(htim->Instance == TIM4)
+    {
+         switch(control_state)
+         {
+           case MOTOR_OPEN:
+             if(HAL_GetTick() - motor_start_time >= 2000)
+             {
+               motor_stop();
+               motor_active = 1;
+               control_state = LED_FADE_IN;
+               led_duty=0;
+             }
+             break;
+           case MOTOR_CLOSE:
+             if (HAL_GetTick() - motor_start_time >= 2000) { // 2초 후
+		 motor_stop(); // 모터 정지
+		 motor_active = 0; // 문 닫힘 상태
+		 action_triggered = 0; // 다음 트리거 대기
+		 control_state = IDLE;
+		 HAL_TIM_Base_Stop_IT(&htim4); // 인터럽트 비활성화
+	     }
+             break;
+           case LED_FADE_IN:
+             led_duty += 100;
+	     if (led_duty >= 10000) {
+		 led_duty = 10000;
+		 control_state = LED_FADE_OUT;
+	     }
+	     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, led_duty);
+	     break;
+             break;
+           case LED_FADE_OUT:
+             led_duty -= 100;
+	     if (led_duty <= 0) {
+		 led_duty = 0;
+		 control_state = IDLE;
+	     }
+	     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, led_duty);
+	     break;
+             break;
+           default:
+             break;
+         }
+    }
 }
 /* USER CODE END 4 */
 

@@ -45,19 +45,25 @@ void lcd_data(uint8_t data)
 
 void i2c_lcd_init(void)
 {
-	delay_us_LCD(50000);
+	//delay_us_LCD(50000);
+        HAL_Delay(50);
 	lcd_command(0x33);
-	delay_us_LCD(5000);
+	//delay_us_LCD(5000);
+	HAL_Delay(5);
 	lcd_command(0x32);
-	delay_us_LCD(5000);
+	//delay_us_LCD(5000);
+	HAL_Delay(5);
 	lcd_command(0x28);
-	delay_us_LCD(5000);
+	//delay_us_LCD(5000);
 	lcd_command(DISPLAY_ON);
-	delay_us_LCD(5000);
+	HAL_Delay(5);
+	//delay_us_LCD(5000);
 	lcd_command(0x06);
-	delay_us_LCD(5000);
+	HAL_Delay(5);
+	//delay_us_LCD(5000);
 	lcd_command(CLEAR_DISPLAY);
-	delay_us_LCD(5000);
+	HAL_Delay(5);
+	//delay_us_LCD(5000);
 	lcd_flag=1;
 }
 
