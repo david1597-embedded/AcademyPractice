@@ -1,6 +1,6 @@
 STM32 내부 핀 설정 값들 (STM32-F411RE)
 
-PC0 ~ PC4 (주차공간 점유 표시 LED) -> 출력
+PC0 ~ PC4 (주차공간 점유 표시 LED) -> 출력\
 PA0 PA1 PA4 PA6 PA7 PA7 PB1 (차례대로 AC1 CH0 CH1 CH4 CH6 CH7 CH ) -> ADC 측정\
 PC6 PC7 -> 블루투스모듈(HC-05)와 연결 USART6 Rx Tx 연결 (라즈베리파이와 통신)\
 PA9 PA10 -> 블루투스모듈(HC-05)와 연결 USART1 Rx Tx 연결 (안드로이드 어플리케이션과 통신)\
