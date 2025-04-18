@@ -7,3 +7,4 @@ Practice Codes for Academy
 2) Atmega128a 활용한 스위치 실습
 3) Atmega128a 할용한 FND 실습
 4) Atmega128a 활용한 INTERRUPT 실습
+ㅌㅎㅇ놓ㅁ놈ㄴ온ㅁ옴ㄴ옴ㄴ
