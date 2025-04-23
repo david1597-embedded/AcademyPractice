@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="title_bar_main">주차장 상태 감지 시스템</string>
+    <string name="pl_temp">주차장 내부 온도</string>
+    <string name="pl_humi">주차장 내부 습도</string>
+    <string name="pl1_status">주차공간1</string>
+    <string name="pl2_status">주차공간2</string>
+    <string name="pl3_status">주차공간3</string>
+    <string name="pl4_status">주차공간4</string>
+    <string name="pl5_status">주차공간5</string>
+    <string name="pl_space">현재 주차 가능 공간</string>
+    <string name="pl_gate">정문 게이트 상태</string>
+    <string name="pl_flame">화재경보 유무</string>
+</resources>
