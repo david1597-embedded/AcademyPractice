@@ -29,3 +29,16 @@ void delay_us_LCD(uint16_t us)
    __HAL_TIM_SET_COUNTER(&htim9,0);
    while((__HAL_TIM_GET_COUNTER(&htim9))<us);
 }
+
+void delay_us_STEPPER(uint16_t us)
+{
+   __HAL_TIM_SET_COUNTER(&htim10,0);
+   while((__HAL_TIM_GET_COUNTER(&htim10))<us);
+}
+
+void delay_us_BUZZER(uint16_t us)
+{
+   __HAL_TIM_SET_COUNTER(&htim2,0);
+   while((__HAL_TIM_GET_COUNTER(&htim2))<us);
+}
+

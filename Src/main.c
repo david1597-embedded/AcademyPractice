@@ -27,6 +27,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "buzzer.h"
+#include "gate.h"
 #include "dht11.h"
 #include "delay.h"
 #include "stdbool.h"
@@ -115,23 +117,29 @@ uint8_t vacant_count=0;
 
 uint8_t lcd_buffer[30];
 
+uint32_t blink_count = 0;
 //MORO ENTERENCE
 typedef enum
 {
   IDLE,
-  LED_FADE_IN,
-  LED_FADE_OUT,
+  LED_BLINK,
   MOTOR_OPEN,
   MOTOR_CLOSE
 }ControlState;
 
 ControlState control_state=IDLE;
+
 uint32_t last_distance = 999;
 uint8_t action_triggered=0;
 uint8_t motor_active=0;
+uint32_t timer_count=0;
 
-uint32_t motor_start_time = 0;
-uint32_t led_duty = 0;
+uint16_t delay_count=0;
+ uint16_t last_step=(uint16_t)((120 * STEPS_PER_REVOLUTION) / 360);
+ uint16_t current_step=0;
+ uint8_t camera_flag=0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -213,11 +221,17 @@ int main(void)
   MX_TIM9_Init();
   MX_I2C1_Init();
   MX_TIM4_Init();
+  MX_USART1_UART_Init();
+  MX_TIM2_Init();
+  MX_TIM10_Init();
+  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   i2c_lcd_init();
   HAL_ADC_Start_DMA(&hadc1,adcValue,6);//0 : park1_light 1 : park2_light 2 : park3_light 3: park4_light 4 : park5_light 5 : flame
   HAL_TIM_Base_Start(&htim1);              //Timer for DHT11
   HAL_TIM_IC_Start(&htim3, TIM_CHANNEL_1);//Timer for HR-SC04
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
 
   dht11Init(&dht, GPIOC, GPIO_PIN_9);
   ultra_Init(&ultra1, GPIOA, GPIO_PIN_8);
@@ -228,7 +242,6 @@ int main(void)
   set_AT_mode();
   //set_COM_mode();
   current_mode=AT;
-
 
   HAL_UART_Receive_IT(&huart2, rx_buffer, 1);
   //HAL_UART_Receive_IT(&huart1, bt_buffer, 1);
@@ -241,31 +254,54 @@ int main(void)
   {
 
      /*dht11 test code*/
-      ultra_Trigger(&ultra1, TIM_IT_CC1);
-      HAL_Delay(60);
-      sensor_process();
-      HAL_Delay(10);
-      if(dht11Read(&dht))
-      {
-	    //온습도 출력
-	   vacant_count=cal_vacant_place();
-	   led_on_off();
-	   snprintf(data_to_ras,sizeof(data_to_ras),"Temp:%d/Humi:%d/pl1:%d/pl2:%d/pl3:%d/pl4:%d/pl5:%d/empty:%d/flame:%d/Main:%s\r\n",
-		    dht.temperature,dht.humidity,check_light[0],check_light[1],check_light[2],check_light[3],check_light[4],vacant_count,flame,action_triggered == 1?"OPEN":"CLOSE");
-	   HAL_UART_Transmit(&huart6, (uint8_t *)data_to_ras, strlen(data_to_ras), 1000);
-	   move_cursor(0,0);
-	   sprintf(lcd_buffer,"Empty Space:%d",vacant_count);
-	   lcd_string(lcd_buffer);
-	   move_cursor(1,0);
-	   sprintf(lcd_buffer,"Temp:%d,Humid:%d",dht.temperature, dht.humidity);
-	   lcd_string(lcd_buffer);
-	   printf("tem:%d , hum: %d %% \r\n",dht.temperature,dht.humidity);
-      }
-      else
-      {
-	   printf("DHT11 can't\n\r");
-      }
-      HAL_Delay(2000);
+        if(flame != 1)
+        {
+           ultra_Trigger(&ultra1, TIM_IT_CC1);
+	    HAL_Delay(60);
+	    sensor_process();
+	    HAL_Delay(10);
+	    //빈 자리 계산
+	    vacant_count=cal_vacant_place();
+
+           //점유 여부 표시
+           led_on_off();
+           if(dht11Read(&dht))
+           {
+             //라즈베리파이에 블루투스 데이터 송신
+		 snprintf(data_to_ras,sizeof(data_to_ras),"Temp:%d/Humi:%d/pl1:%d/pl2:%d/pl3:%d/pl4:%d/pl5:%d/empty:%d/flame:%d/Main:%s/CF:%s\r\n",
+			  dht.temperature,dht.humidity,check_light[0],check_light[1],check_light[2],check_light[3],check_light[4],vacant_count,flame,motor_active == 1?"MOVE":"STOP",camera_flag == 1? "CARIN":"NOCAR");
+		 HAL_UART_Transmit(&huart6, (uint8_t *)data_to_ras, strlen(data_to_ras), 1000);
+
+		 //안드로이드 어플 블루투스 데이터 통신
+		 snprintf(data_to_ras,sizeof(data_to_ras),"Temp:%d/Humi:%d/pl1:%d/pl2:%d/pl3:%d/pl4:%d/pl5:%d/empty:%d/flame:%d/Main:%s\r\n",
+				  dht.temperature,dht.humidity,check_light[0],check_light[1],check_light[2],check_light[3],check_light[4],vacant_count,flame,action_triggered == 1?"MOVE":"STOP",camera_flag == 1? "CARIN":"NOCAR");
+		 HAL_UART_Transmit(&huart1, (uint8_t *)data_to_ras, strlen(data_to_ras), 1000);
+
+		 //LCD데이터 출력
+		 move_cursor(0,0);
+		 sprintf(lcd_buffer,"Empty Space:%d",vacant_count);
+		 lcd_string(lcd_buffer);
+		 move_cursor(1,0);
+		 sprintf(lcd_buffer,"Temp:%d,Humid:%d",dht.temperature, dht.humidity);
+		 lcd_string(lcd_buffer);
+
+		 printf("tem:%d , hum: %d %% \r\n",dht.temperature,dht.humidity);
+		 if(camera_flag==1)
+		 {
+		   camera_flag=0;
+		 }
+           }
+           else
+           {
+               printf("DHT11 can't\n\r");
+            }
+        }
+        else
+        {
+          //BUzze r 울리기
+
+        }
+        HAL_Delay(2000);
 
     /* USER CODE END WHILE */
 
@@ -352,11 +388,11 @@ void sensor_process(void)
     }
   }
 
-  if(adcValue[6]<10)
+  if(adcValue[5]>950)
   {
      flame=1;
   }
-  else if(adcValue[6]>=10)
+  else
   {
      flame=0;
   }
@@ -381,11 +417,11 @@ void led_on_off(void)
   {
     if(check_light[i] == 1)
     {
-      HAL_GPIO_WritePin(PARK4_LED_GPIO_Port, leds[i], GPIO_PIN_SET);
+      HAL_GPIO_WritePin(GPIOC, leds[i], GPIO_PIN_SET);
     }
     else if(check_light[i] == 0)
     {
-      HAL_GPIO_WritePin(PARK4_LED_GPIO_Port, leds[i], GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOC, leds[i], GPIO_PIN_RESET);
     }
 }
 }
@@ -406,18 +442,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 // 모터 제어 함수
 void motor_open(void) {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);  // IN1 HIGH
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET); // IN2 LOW
+  //TIM10시작
 }
 
 void motor_close(void) {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET); // IN1 LOW
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);  // IN2 HIGH
+  //TIM10 시작
 }
 
 void motor_stop(void) {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET); // IN1 LOW
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET); // IN2 LOW
+  //타미어 10 정지
 }
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     //PC <-> STM32
@@ -448,7 +481,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
       }
       else if(ultra1.capture_flag == 1)
       {
-	IC_Value_2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+	IC_Value_2 = HAL_TIM_ReadCapturedValue(&htim3, TIM_CHANNEL_1);
 	if(IC_Value_2 > IC_Value_1)
 	{
 	  echo_time=IC_Value_2 - IC_Value_1;
@@ -458,82 +491,133 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	  echo_time=(0xFFFF - IC_Value_1) + IC_Value_2;
 	}
 	ultra1.distance=echo_time/58;
-
+//        if(echo_time/58 > 400)
+//        {
+//          ultra1.distance = 400;
+//        }
+//        else if(echo_time/58 < 2)
+//	 {
+//	   ultra1.distance = 2;
+//	 }
 	printf("Object detected....[ %d cm ] \r\n",ultra1.distance);
 
 	if((echo_time/58 <20) && !action_triggered)
 	{
+	  timer_count=0;
 	   control_state = MOTOR_OPEN;//모터 회전(문 열기)
-	   motor_start_time = HAL_GetTick();
+	  // motor_start_time = HAL_GetTick();
 	   motor_open();
-	   motor_active = 1;
+	   camera_flag=1;
 	   action_triggered=1;
+	   motor_active=1;
 	   HAL_TIM_Base_Start_IT(&htim4);
+	   HAL_TIM_Base_Start_IT(&htim10);
+	  // BUZZER_Open();
 	}
-	else if((echo_time/58 >20) && motor_active)
+	else if((echo_time/58 >20) && action_triggered && control_state != MOTOR_CLOSE)
 	{
 	  //차량 사라짐 모터 역회전
-	  control_state = MOTOR_CLOSE;
-	  motor_start_time=HAL_GetTick();
+	  timer_count=0;
+	  motor_active=1;
+	  control_state=MOTOR_CLOSE;
 	  motor_close();
+	  HAL_TIM_Base_Start_IT(&htim4);
+	  HAL_TIM_Base_Start_IT(&htim10);
+	  //BUZZER_Close();
+
 	}
 
 	ultra1.capture_flag = 0;
-	__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-	__HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
+	__HAL_TIM_SET_CAPTUREPOLARITY(&htim3, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+	__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_CC1);
       }
     }
   }
 }
 
-//Elapsed Call back
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if(htim->Instance == TIM4)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+
+  if(htim->Instance == TIM4)
+  {
+    switch(control_state)
     {
-         switch(control_state)
-         {
-           case MOTOR_OPEN:
-             if(HAL_GetTick() - motor_start_time >= 2000)
-             {
-               motor_stop();
-               motor_active = 1;
-               control_state = LED_FADE_IN;
-               led_duty=0;
-             }
-             break;
-           case MOTOR_CLOSE:
-             if (HAL_GetTick() - motor_start_time >= 2000) { // 2초 후
-		 motor_stop(); // 모터 정지
-		 motor_active = 0; // 문 닫힘 상태
-		 action_triggered = 0; // 다음 트리거 대기
-		 control_state = IDLE;
-		 HAL_TIM_Base_Stop_IT(&htim4); // 인터럽트 비활성화
-	     }
-             break;
-           case LED_FADE_IN:
-             led_duty += 100;
-	     if (led_duty >= 10000) {
-		 led_duty = 10000;
-		 control_state = LED_FADE_OUT;
-	     }
-	     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, led_duty);
-	     break;
-             break;
-           case LED_FADE_OUT:
-             led_duty -= 100;
-	     if (led_duty <= 0) {
-		 led_duty = 0;
-		 control_state = IDLE;
-	     }
-	     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, led_duty);
-	     break;
-             break;
-           default:
-             break;
-         }
+      case MOTOR_OPEN:
+	timer_count++;
+	if(timer_count >=1000)
+	{
+	  motor_stop();
+	  motor_active=0;
+	  action_triggered=1;
+	  control_state =IDLE;
+	  timer_count=0;
+	  HAL_TIM_Base_Stop_IT(&htim4);
+	}
+	break;
+      case MOTOR_CLOSE:
+	timer_count++;
+	if(timer_count >=1000)
+	{
+	  motor_stop();
+	  motor_active=0;
+	  action_triggered=0;
+	  control_state=IDLE;
+	  HAL_TIM_Base_Stop_IT(&htim4);
+	}
+         break;
+      default:
+	timer_count=0;
+	//HAL_TIM_Base_Stop_IT(&htim4);
+	break;
     }
+  }
+  if(htim->Instance == TIM10)
+  {
+//   static uint16_t delay_count=0;
+//    static uint16_t last_step=(uint16_t)((90 * STEPS_PER_REVOLUTION) / 360);
+//    static uint16_t current_step=0;
+    switch(control_state)
+    {
+      case MOTOR_OPEN:
+	delay_count++;
+	if(current_step < last_step)
+	{
+	  stepMotor(current_step % 8); // 8상 스텝 제어
+	  current_step++;
+	}
+	else if(current_step >=last_step)
+	{
+	  delay_count=0;
+	  current_step=0;
+	  HAL_TIM_Base_Stop_IT(&htim10);
+	}
+	break;
+      case MOTOR_CLOSE:
+
+      	delay_count++;
+	if(current_step < last_step)
+	{
+	  stepMotor(7-(current_step % 8)); // 8상 스텝 제어
+	  current_step++;
+	}
+	else if(current_step >=last_step)
+	{
+	  delay_count=0;
+	  current_step=0;
+	  HAL_TIM_Base_Stop_IT(&htim10);
+	}
+	break;
+      	break;
+      default:
+	delay_count=0;
+	current_step=0;
+	 //HAL_TIM_Base_Stop_IT(&htim10);
+	break;
+    }
+  }
+
 }
+
+
 /* USER CODE END 4 */
 
 /**

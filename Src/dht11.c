@@ -59,7 +59,7 @@ uint8_t dht11Read(DHT11 *dht)
 	//통신 시작 신호 전송
 	dht11GpioMode(dht, OUTPUT);                              //GPIO를 출력 모드로 설정
 	HAL_GPIO_WritePin(dht->port, dht->pinNumber, 0);         //dht11에 0 전송
-	HAL_Delay(20);                                           //시작 신호(low유지)
+	delay_us_DHT11(18000);                                         //시작 신호(low유지)
 	HAL_GPIO_WritePin(dht->port, dht->pinNumber, 1);         //dht11에 1 전송
 	delay_us_DHT11(30);                                      //30us 대기
 	dht11GpioMode(dht, INPUT);                                //GPIO를 입력 모드로 설정
