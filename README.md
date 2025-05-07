@@ -10,7 +10,7 @@ TIM2 -> DC 모터 드라이버에 연결할 PWM 채널 생성용\
 TIM3 -> HC-SR04 CH1사용하여 초음파센서 에코 측정 (Input Capture Interrupt)\
 TIM4 -> 주차장 입구 모터 동작시간 측정용 (Elapsed Callback) (추가 적으로 CH1 PWM 사용하여 LED 점멸 기능 추가 고려)\
 TIM9 -> LCD 모듈 delay 용\
-PA11 PA12 -> 모터드라이버에 연결하여 전류 방향 결정\
+TIM10 -> 스테퍼 모터 스텝 업데이트 용
 
 
 시스템 클럭 소스 HSE - >100MHZ로 변경 분주비 100-1 변경하면 카운터 주기 1us로 맞출 수 있음
