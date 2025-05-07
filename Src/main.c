@@ -257,11 +257,11 @@ int main(void)
         if(flame != 1)
         {
            ultra_Trigger(&ultra1, TIM_IT_CC1);
-	    HAL_Delay(60);
-	    sensor_process();
-	    HAL_Delay(10);
+	   HAL_Delay(60);
+	   sensor_process();
+	   HAL_Delay(10);
 	    //빈 자리 계산
-	    vacant_count=cal_vacant_place();
+	   vacant_count=cal_vacant_place();
 
            //점유 여부 표시
            led_on_off();
@@ -288,7 +288,7 @@ int main(void)
 		 printf("tem:%d , hum: %d %% \r\n",dht.temperature,dht.humidity);
 		 if(camera_flag==1)
 		 {
-		   camera_flag=0;
+		     camera_flag=0;
 		 }
            }
            else
@@ -509,12 +509,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	   motor_open();
 	   camera_flag=1;
 	   action_triggered=1;
-	   motor_active=1;
 	   HAL_TIM_Base_Start_IT(&htim4);
 	   HAL_TIM_Base_Start_IT(&htim10);
 	  // BUZZER_Open();
 	}
-	else if((echo_time/58 >20) && action_triggered && control_state != MOTOR_CLOSE)
+	else if((echo_time/58 >20) && motor_active && control_state != MOTOR_CLOSE)
 	{
 	  //차량 사라짐 모터 역회전
 	  timer_count=0;
@@ -546,7 +545,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if(timer_count >=1000)
 	{
 	  motor_stop();
-	  motor_active=0;
+	  motor_active=1;
 	  action_triggered=1;
 	  control_state =IDLE;
 	  timer_count=0;
@@ -606,7 +605,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	  HAL_TIM_Base_Stop_IT(&htim10);
 	}
 	break;
-      	break;
+
       default:
 	delay_count=0;
 	current_step=0;
