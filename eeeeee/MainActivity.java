@@ -27,6 +27,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -40,6 +41,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
 
+import org.json.JSONObject;
 import org.w3c.dom.Text;
 
 import java.io.IOException;
@@ -52,6 +54,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -78,9 +88,18 @@ public class MainActivity extends AppCompatActivity {
     TextView vacant_status;
     TextView flame_status;
     TextView gate_status;
+    TextView username;
 
     private DrawerLayout drawer;
 
+    private OkHttpClient client;
+    private Handler handler;
+    private Runnable dataFetcher;
+    private int userNum;
+
+    private String userName;
+    private static final String BASE_URL = "http://10.10.10.106:5001/"; // Flask 서버 주소
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private final ActivityResultLauncher<Intent> enableBluetoothLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -210,19 +229,216 @@ public class MainActivity extends AppCompatActivity {
         vacant_status=findViewById(R.id.textViewEmpty);
         flame_status=findViewById(R.id.textViewFlame);
         gate_status=findViewById(R.id.textViewGate);
+        username=findViewById(R.id.username);
 
 
-
+       /*블루투스 사용하지 않고 flask api 사용해서 데이터 수신할 예정*/
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Toast.makeText(this, "This device doesn't support Bluetooth", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "This device doesn't support Bluetooth", Toast.LENGTH_SHORT).show();
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            checkAndRequestPermissions();
+            //checkAndRequestPermissions();
         }
+
+        //flask api 접근을 위한 변수
+        client = new OkHttpClient();
+        handler = new Handler(Looper.getMainLooper());
+        //Login Activity에서 데이터 받아옴
+        userNum = getIntent().getIntExtra("num", -1);
+        userName = getIntent().getStringExtra("USER_NAME");
+
+
+
+        Log.d(TAG, "Received num: " + userNum);
+        if (userNum == -1) {
+            Log.e(TAG, "Invalid user num received from Intent");
+            Toast.makeText(this, "유효하지 않은 사용자 정보입니다. 다시 로그인해주세요.", Toast.LENGTH_LONG).show();
+            redirectToLogin();
+            return;
+        }
+
+        // userName 유효성 검사 및 출력
+        Log.d(TAG, "Received name: " + userName);
+        if (userName == null || userName.isEmpty()) {
+            Log.e(TAG, "Invalid user name received from Intent");
+            Toast.makeText(this, "사용자 이름이 없습니다. 다시 로그인해주세요.", Toast.LENGTH_LONG).show();
+            redirectToLogin();
+            return;
+        }
+
+        username.setText(getString(R.string.username_format, userName));
+        startDataFetching();
+    }
+    private void redirectToLogin() {
+        Intent intent = new Intent(this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
+    private void startDataFetching() {
+        dataFetcher = new Runnable() {
+            @Override
+            public void run() {
+                fetchData(userNum);
+                handler.postDelayed(this, 2000); // 5초마다 갱신
+            }
+        };
+        handler.post(dataFetcher);
+    }
+
+    private void fetchData(int num) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("num", num); // 예: {"num": 1}
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating JSON for num: " + num, e);
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error creating request", Toast.LENGTH_SHORT).show());
+            return;
+        }
+
+        RequestBody body = RequestBody.create(json.toString(), JSON);
+        Request request = new Request.Builder()
+                .url(BASE_URL + "fetch_data")
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Failed to fetch data from server", e);
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Network error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String responseBody = response.body() != null ? response.body().string() : "{}";
+                Log.d(TAG, "Server response: " + responseBody); // 디버깅용 응답 로그
+                runOnUiThread(() -> {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        if (jsonResponse.has("message") && jsonResponse.getString("message").equals("Data fetched successfully")) {
+                            JSONObject data = jsonResponse.optJSONObject("data");
+                            if (data == null) {
+                                Log.w(TAG, "Data object is null");
+                                updateTextViewsWithNoData();
+                                return;
+                            }
+
+                            JSONObject dht11 = data.optJSONObject("DHT11");
+                            JSONObject park = data.optJSONObject("Park");
+
+                            // DHT11 데이터 업데이트
+                            if (dht11 != null && dht11.length() > 0) {
+                            //온도 습도 UI 처리
+                                // float 값을 문자열로 그대로 출력
+                                temp_degree.setText(getString(R.string.temp_format, String.valueOf(dht11.optDouble("temp", Double.NaN))));
+                                humi_per.setText(getString(R.string.humi_format, String.valueOf(dht11.optDouble("humi", Double.NaN))));
+                            } else {
+                                Log.w(TAG, "DHT11 data is null or empty");
+                                updateTextViewsWithNoData();
+                            }
+
+
+
+                            // Park 데이터 업데이트
+                            if (park != null && park.length() > 0) {
+                            //
+                                // pl1~pl5: float -> int 형변환
+                                int pl1 = (int) park.optDouble("pl1", -1);
+                                int pl2 = (int) park.optDouble("pl2", -1);
+                                int pl3 = (int) park.optDouble("pl3", -1);
+                                int pl4 = (int) park.optDouble("pl4", -1);
+                                int pl5 = (int) park.optDouble("pl5", -1);
+
+                                pl1_status.setText(pl1 == 1 ? "점유" : "공차");
+                                pl2_status.setText(pl2 == 1 ? "점유" : "공차");
+                                pl3_status.setText(pl3 == 1 ? "점유" : "공차");
+                                pl4_status.setText(pl4 == 1 ? "점유" : "공차");
+                                pl5_status.setText(pl5 == 1 ? "점유" : "공차");
+
+
+
+                                // EMPTY: float -> int 형변환
+                                int empty = (int) park.optDouble("EMPTY", -1);
+                                vacant_status.setText(getString(R.string.empty_format, empty));
+
+                                // Flame: float -> int 형변환
+                                int flame = (int) park.optDouble("Flame", -1);
+                                flame_status.setText(getString(R.string.flame_format, flame == 1 ? getString(R.string.flame_detected) : flame == 0 ? getString(R.string.flame_cleared) : getString(R.string.na)));
+
+                                // Main: 문자열 그대로 출력
+                                gate_status.setText(getString(R.string.gate_format, park.optString("Main", getString(R.string.na))));
+
+                            } else {
+                                Log.w(TAG, "Park data is null or empty");
+                                updateTextViewsWithNoData();
+                            }
+                        } else {
+                            String error = jsonResponse.optString("error", getString(R.string.error_data_fetch));
+                            Log.e(TAG, "Server error: " + error);
+                            Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+                            updateTextViewsWithNoData();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing server response", e);
+                        Toast.makeText(MainActivity.this, getString(R.string.error_parsing), Toast.LENGTH_SHORT).show();
+                        updateTextViewsWithNoData();
+                    }
+                });
+            }
+
+        });
+    }
+
+    private void updateTextViewsWithNoData() {
+        temp_degree.setText(getString(R.string.temp_format, getString(R.string.na)));
+        humi_per.setText(getString(R.string.humi_format, getString(R.string.na)));
+        pl1_status.setText(getString(R.string.na));
+        pl2_status.setText(getString(R.string.na));
+        pl3_status.setText(getString(R.string.na));
+        pl4_status.setText(getString(R.string.na));
+        pl5_status.setText(getString(R.string.na));
+        vacant_status.setText(getString(R.string.na));
+        flame_status.setText(getString(R.string.flame_format, getString(R.string.na)));
+        gate_status.setText(getString(R.string.gate_format, getString(R.string.na)));
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* 블루투스 이용해서 데이터 받아오는 코드들 */
     @RequiresApi(api = Build.VERSION_CODES.S)
     private void checkAndRequestPermissions() {
         List<String> permissionsNeeded = new ArrayList<>();
@@ -407,7 +623,7 @@ public class MainActivity extends AppCompatActivity {
         pl4_status.setText(parsedData.get("pl4") != null ? parsedData.get("pl4") : "--");
         pl5_status.setText(parsedData.get("pl5") != null ? parsedData.get("pl5") : "--");
 
-        vacant_status.setText(getString(R.string.empty_format, parsedData.get("empty") != null ? parsedData.get("empty") : "--"));
+       // vacant_status.setText(getString(R.string.empty_format, parsedData.get("empty") != null ? parsedData.get("empty") : "--"));
         flame_status.setText(parsedData.get("flame") != null ? parsedData.get("flame") : "--");
         gate_status.setText(getString(R.string.gate_format, parsedData.get("Main") != null ? parsedData.get("Main") : "--"));
 
