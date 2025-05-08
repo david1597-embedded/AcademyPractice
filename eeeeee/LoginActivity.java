@@ -1,28 +1,32 @@
 package com.example.eeeeee;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eeeeee.R;
 
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
-import org.json.JSONObject;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class LoginActivity extends AppCompatActivity {
+    private static final String TAG = "LoginActivity";
     private EditText editTextUsername, editTextPassword;
     private Button buttonLogin;
     private OkHttpClient client;
@@ -32,7 +36,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d("LOGIN_ACTIVITY", "onCreate called");
+        Log.d(TAG, "onCreate called");
         setContentView(R.layout.activity_login);
 
         // UI 요소 초기화
@@ -40,32 +44,32 @@ public class LoginActivity extends AppCompatActivity {
             editTextUsername = findViewById(R.id.editTextUsername);
             editTextPassword = findViewById(R.id.editTextPassword);
             buttonLogin = findViewById(R.id.buttonLogin);
-            Log.d("LOGIN_ACTIVITY", "UI elements initialized: buttonLogin ID=" + R.id.buttonLogin);
+            Log.d(TAG, "UI elements initialized: buttonLogin ID=" + R.id.buttonLogin);
         } catch (Exception e) {
-            Log.e("LOGIN_ERROR", "Error initializing UI: " + e.getMessage(), e);
+            Log.e(TAG, "Error initializing UI: " + e.getMessage(), e);
             Toast.makeText(this, "UI 초기화 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
             return;
         }
 
         // OkHttp 클라이언트 초기화 (로깅 인터셉터 포함)
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> Log.d("OKHTTP", message));
+        HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> Log.d(TAG, message));
         logging.setLevel(HttpLoggingInterceptor.Level.BODY);
         client = new OkHttpClient.Builder()
                 .addInterceptor(logging)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .build();
 
         // 로그인 버튼 클릭 리스너
         buttonLogin.setOnClickListener(v -> {
-            Log.d("LOGIN_ACTIVITY", "Login button clicked");
+            Log.d(TAG, "Login button clicked");
             String id = editTextUsername.getText().toString().trim();
             String password = editTextPassword.getText().toString().trim();
 
             if (id.isEmpty() || password.isEmpty()) {
-                Log.w("LOGIN_ACTIVITY", "Empty id or password");
-                Toast.makeText(LoginActivity.this, "Please enter username and password", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "Empty id or password");
+                Toast.makeText(LoginActivity.this, "아이디와 비밀번호를 입력해주세요", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -74,82 +78,74 @@ public class LoginActivity extends AppCompatActivity {
             try {
                 jsonBody.put("id", id);
                 jsonBody.put("password", password);
-                Log.d("LOGIN_REQUEST", "Request Body: " + jsonBody.toString());
+                Log.d(TAG, "Request Body: " + jsonBody.toString());
             } catch (Exception e) {
-                Log.e("LOGIN_ERROR", "Error creating JSON: " + e.getMessage(), e);
-                Toast.makeText(LoginActivity.this, "JSON 생성 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Error creating JSON: " + e.getMessage(), e);
+                Toast.makeText(LoginActivity.this, "요청 생성 오류", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 비동기 요청 실행
-            new LoginTask().execute(jsonBody.toString());
+            // 비동기 로그인 요청
+            loginRequest(jsonBody.toString());
         });
     }
 
-    @SuppressLint("StaticFieldLeak")
-    private class LoginTask extends AsyncTask<String, Void, String> {
-        private String errorMessage = null;
+    private void loginRequest(String jsonBody) {
+        String url = SERVER_URL + "/login";
+        RequestBody body = RequestBody.create(jsonBody, JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .addHeader("Content-Type", "application/json; charset=UTF-8")
+                .build();
 
-        @Override
-        protected String doInBackground(String... params) {
-            String jsonBody = params[0];
-            String url = SERVER_URL + "/login";
-            Log.d("LOGIN_REQUEST", "Request URL: " + url);
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Network error", e);
+                runOnUiThread(() -> Toast.makeText(LoginActivity.this, "네트워크 오류: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
 
-            RequestBody body = RequestBody.create(JSON, jsonBody); // Fixed order of parameters
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .addHeader("Content-Type", "application/json; charset=UTF-8")
-                    .build();
-
-            try {
-                Response response = client.newCall(request).execute();
-                Log.d("LOGIN_RESPONSE", "Response Code: " + response.code());
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 String responseBody = response.body() != null ? response.body().string() : "";
-                Log.d("LOGIN_RESPONSE", "Response Body: " + responseBody);
+                Log.d(TAG, "Response: " + responseBody);
 
-                if (!response.isSuccessful()) {
-                    errorMessage = "Server error: " + response.code() + " - " + responseBody;
-                    return null;
-                }
+                runOnUiThread(() -> {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        if (jsonResponse.has("message") && jsonResponse.getString("message").equals("Login successful")) {
+                            String name = jsonResponse.optString("name", "");
+                            String userId = jsonResponse.optString("id", "");
+                            int num = jsonResponse.optInt("num", -1);
 
-                return responseBody;
-            } catch (IOException e) {
-                Log.e("LOGIN_ERROR", "Network error: " + e.getMessage(), e);
-                errorMessage = "네트워크 오류: " + e.getMessage();
-                return null;
+                            if (num == -1) {
+                                Log.e(TAG, "Invalid num in response: " + responseBody);
+                                Toast.makeText(LoginActivity.this, "서버에서 유효한 num 값을 받지 못했습니다", Toast.LENGTH_LONG).show();
+                                return;
+                            }
+
+                            Toast.makeText(LoginActivity.this, "반갑습니다!! " + name, Toast.LENGTH_LONG).show();
+
+                            // MainActivity로 이동
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                            intent.putExtra("USER_NAME", name);
+                            intent.putExtra("USER_ID", userId);
+                            intent.putExtra("num", num);
+                            Log.d(TAG, "Starting MainActivity with num: " + num);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            String error = jsonResponse.optString("error", "알 수 없는 오류");
+                            Log.w(TAG, "Login failed: " + error);
+                            Toast.makeText(LoginActivity.this, error, Toast.LENGTH_LONG).show();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing response", e);
+                        Toast.makeText(LoginActivity.this, "응답 처리 오류", Toast.LENGTH_LONG).show();
+                    }
+                });
             }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            if (result == null) {
-                Toast.makeText(LoginActivity.this, errorMessage != null ? errorMessage : "알 수 없는 오류", Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            try {
-                JSONObject response = new JSONObject(result);
-                if (response.has("message")) {
-                    String name = response.getString("name");
-                    String userId = response.getString("id");
-                    Toast.makeText(LoginActivity.this, "반갑습니다!! " + name, Toast.LENGTH_LONG).show();
-
-                    // MainActivity로 이동
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                    intent.putExtra("USER_NAME", name);
-                    intent.putExtra("USER_ID", userId);
-                    startActivity(intent);
-                    finish();
-                } else if (response.has("error")) {
-                    Log.w("LOGIN_RESPONSE", "Error: " + response.getString("error"));
-                    Toast.makeText(LoginActivity.this, response.getString("error"), Toast.LENGTH_LONG).show();
-                }
-            } catch (Exception e) {
-                Log.e("LOGIN_ERROR", "Error parsing response: " + e.getMessage(), e);
-                Toast.makeText(LoginActivity.this, "응답 처리 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        }
+        });
     }
 }
