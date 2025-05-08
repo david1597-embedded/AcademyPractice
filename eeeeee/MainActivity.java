@@ -98,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
     private int userNum;
 
     private String userName;
+    private String userId;
     private static final String BASE_URL = "http://10.10.10.106:5001/"; // Flask 서버 주소
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -211,6 +212,26 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(MainActivity.this, CCTVActivity.class));
                     drawer.closeDrawer(GravityCompat.END);
                 }
+                else if (itemId == R.id.nav_logout) {
+                    // 로그아웃 확인 다이얼로그 표시
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("로그아웃")
+                            .setMessage("로그아웃 하시겠습니까?")
+                            .setPositiveButton("예", (dialog, which) -> {
+                                // LoginActivity로 이동하고 현재 액티비티 종료
+                                sendLogoutRequest(userId, userName);
+                                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                                startActivity(intent);
+                                finish();
+                            })
+                            .setNegativeButton("아니오", (dialog, which) -> {
+                                // 다이얼로그 닫기
+                                dialog.dismiss();
+                            })
+                            .setCancelable(true)
+                            .show();
+                    drawer.closeDrawer(GravityCompat.END);
+                }
                 return true;
             } catch (Exception e) {
                 Log.e(TAG, "Navigation item selection failed", e);
@@ -252,21 +273,16 @@ public class MainActivity extends AppCompatActivity {
 
 
         Log.d(TAG, "Received num: " + userNum);
-        if (userNum == -1) {
-            Log.e(TAG, "Invalid user num received from Intent");
+        userId = getIntent().getStringExtra("USER_ID"); // userId 추가
+
+        Log.d(TAG, "Received num: " + userNum + ", name: " + userName + ", id: " + userId);
+        if (userNum == -1 || userName == null || userName.isEmpty() || userId == null || userId.isEmpty()) {
+            Log.e(TAG, "Invalid user data received from Intent");
             Toast.makeText(this, "유효하지 않은 사용자 정보입니다. 다시 로그인해주세요.", Toast.LENGTH_LONG).show();
             redirectToLogin();
             return;
         }
 
-        // userName 유효성 검사 및 출력
-        Log.d(TAG, "Received name: " + userName);
-        if (userName == null || userName.isEmpty()) {
-            Log.e(TAG, "Invalid user name received from Intent");
-            Toast.makeText(this, "사용자 이름이 없습니다. 다시 로그인해주세요.", Toast.LENGTH_LONG).show();
-            redirectToLogin();
-            return;
-        }
 
         username.setText(getString(R.string.username_format, userName));
         startDataFetching();
@@ -287,7 +303,55 @@ public class MainActivity extends AppCompatActivity {
         };
         handler.post(dataFetcher);
     }
+    private void sendLogoutRequest(String userId, String userName) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("id", userId);
+            json.put("name", userName);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating JSON for logout", e);
+            Toast.makeText(this, "로그아웃 요청 생성 실패", Toast.LENGTH_SHORT).show();
+            redirectToLogin();
+            return;
+        }
 
+        RequestBody body = RequestBody.create(json.toString(), JSON);
+        Request request = new Request.Builder()
+                .url(BASE_URL + "logout")
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Failed to send logout request", e);
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "네트워크 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                redirectToLogin();
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String responseBody = response.body() != null ? response.body().string() : "{}";
+                Log.d(TAG, "Logout response: " + responseBody);
+                runOnUiThread(() -> {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        if (jsonResponse.has("message") && jsonResponse.getString("message").equals("Logout successful")) {
+                            Toast.makeText(MainActivity.this, "로그아웃 성공", Toast.LENGTH_SHORT).show();
+                        } else {
+                            String error = jsonResponse.optString("error", "로그아웃 실패");
+                            Log.e(TAG, "Logout error: " + error);
+                            Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing logout response", e);
+                        Toast.makeText(MainActivity.this, "로그아웃 응답 처리 오류", Toast.LENGTH_SHORT).show();
+                    }
+                    redirectToLogin();
+                });
+            }
+        });
+    }
     private void fetchData(int num) {
         JSONObject json = new JSONObject();
         try {
